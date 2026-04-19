@@ -1,0 +1,58 @@
+################################################################################
+# GitHub Actions Workflow - Test Trigger
+# 
+# Purpose: Simple push-based workflow to test GitHub Actions
+# Trigger: Push to the 'trigger' directory
+# 
+# How to use:
+# 1. Create a 'trigger' directory in your repository
+# 2. Push any changes to that directory
+# 3. This workflow will automatically run and send Discord webhook notification
+################################################################################
+
+name: Test Trigger Workflow
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+    paths:
+      - 'trigger/**'
+
+jobs:
+  test-notification:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Get commit info
+        id: commit
+        run: |
+          echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+          echo "COMMIT_AUTHOR=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+      
+      - name: Send Discord notification
+        uses: tsickert/discord-webhook@v1
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_TEST }}
+          content: |
+            **✅ GitHub Actions Test Successful!**
+            
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ steps.commit.outputs.COMMIT_SHA }}
+            Author: ${{ steps.commit.outputs.COMMIT_AUTHOR }}
+            Message: ${{ steps.commit.outputs.COMMIT_MESSAGE }}
+            Timestamp: $(date)
+      
+      - name: Display success message
+        run: |
+          echo "✅ Test workflow completed successfully!"
+          echo "Repository: ${{ github.repository }}"
+          echo "Commit: ${{ steps.commit.outputs.COMMIT_SHA }}"
+          echo "Author: ${{ steps.commit.outputs.COMMIT_AUTHOR }}"
